@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+<!-- ===== V1 SCHEMA - BLUE CLUSTER ===== -->
+
+  <changeSet id="v1-001-create-products" author="thang">
+    <createTable tableName="products">
+      <column name="id" type="BIGINT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="title" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="description" type="TEXT"/>
+      <column name="price" type="DECIMAL(10,2)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="discount_percentage" type="DECIMAL(5,2)" defaultValueNumeric="0"/>
+      <column name="rating" type="DECIMAL(3,2)" defaultValueNumeric="0"/>
+      <column name="stock" type="INT" defaultValueNumeric="0">
+        <constraints nullable="false"/>
+      </column>
+      <column name="category" type="VARCHAR(50)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="brand" type="VARCHAR(100)"/>
+      <column name="sku" type="VARCHAR(50)"/>
+      <column name="availability_status" type="VARCHAR(50)" defaultValue="In Stock"/>
+      <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+      <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+    </createTable>
+  </changeSet>
+
+  <changeSet id="v1-002-create-outbox" author="thang">
+    <createTable tableName="outbox_events">
+      <column name="id" type="BIGINT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="aggregate_id" type="VARCHAR(64)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="event_type" type="VARCHAR(20)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="payload" type="JSON">
+        <constraints nullable="false"/>
+      </column>
+      <column name="origin" type="VARCHAR(20)" defaultValue="BLUE">
+        <constraints nullable="false"/>
+      </column>
+      <column name="processed" type="BOOLEAN" defaultValueBoolean="false">
+        <constraints nullable="false"/>
+      </column>
+      <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+    </createTable>
+    <createIndex tableName="outbox_events" indexName="idx_outbox_processed">
+      <column name="processed"/>
+      <column name="created_at"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="v1-003-create-id-mapping" author="thang">
+    <createTable tableName="id_mapping">
+      <column name="blue_id" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="green_uuid" type="VARCHAR(36)">
+        <constraints nullable="false" unique="true"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+</databaseChangeLog>

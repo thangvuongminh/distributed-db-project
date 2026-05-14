@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  mysql-blue:
+    image: mysql:8.0
+    container_name: mysql-blue
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: catalog_v1
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app123
+    ports:
+      - "3307:3306"
+    volumes:
+      - blue-data:/var/lib/mysql
+    networks:
+      - distdb-net
+
+  mysql-green:
+    image: mysql:8.0
+    container_name: mysql-green
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: catalog_v2
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app123
+    ports:
+      - "3308:3306"
+    volumes:
+      - green-data:/var/lib/mysql
+    networks:
+      - distdb-net
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    networks:
+      - distdb-net
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    ports:
+      - "8091:8080"
+    networks:
+      - distdb-net
+
+volumes:
+  blue-data:
+  green-data:
+
+networks:
+  distdb-net:
+    driver: bridge
