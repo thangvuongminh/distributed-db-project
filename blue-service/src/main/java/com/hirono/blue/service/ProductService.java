@@ -100,4 +100,69 @@ public class ProductService {
       throw new RuntimeException("Outbox serialization failed", e);
     }
   }
+  @Transactional
+  public Product createFromReplication(ProductDto dto) {
+    Product product = Product.builder()
+        .title(dto.getTitle())
+        .description(dto.getDescription())
+        .price(dto.getPrice())
+        .discountPercentage(dto.getDiscountPercentage())
+        .rating(dto.getRating())
+        .stock(dto.getStock())
+        .category(dto.getCategory())
+        .brand(dto.getBrand())
+        .sku(dto.getSku())
+        .availabilityStatus(dto.getAvailabilityStatus())
+        .build();
+
+    Product saved = productRepository.save(product);
+    publishOutboxEventWithOrigin("CREATE", saved, "GREEN");
+    log.info("Replicated CREATE [BLUE from GREEN]: id={}", saved.getId());
+    return saved;
+  }
+
+  @Transactional
+  public Product updateFromReplication(Long id, ProductDto dto) {
+    Product product = getById(id);
+    if (dto.getTitle() != null) product.setTitle(dto.getTitle());
+    if (dto.getDescription() != null) product.setDescription(dto.getDescription());
+    if (dto.getPrice() != null) product.setPrice(dto.getPrice());
+    if (dto.getDiscountPercentage() != null) product.setDiscountPercentage(dto.getDiscountPercentage());
+    if (dto.getRating() != null) product.setRating(dto.getRating());
+    if (dto.getStock() != null) product.setStock(dto.getStock());
+    if (dto.getCategory() != null) product.setCategory(dto.getCategory());
+    if (dto.getBrand() != null) product.setBrand(dto.getBrand());
+    if (dto.getSku() != null) product.setSku(dto.getSku());
+    if (dto.getAvailabilityStatus() != null) product.setAvailabilityStatus(dto.getAvailabilityStatus());
+
+    Product updated = productRepository.save(product);
+    publishOutboxEventWithOrigin("UPDATE", updated, "GREEN");
+    log.info("Replicated UPDATE [BLUE from GREEN]: id={}", updated.getId());
+    return updated;
+  }
+
+  @Transactional
+  public void deleteFromReplication(Long id) {
+    Product product = getById(id);
+    productRepository.delete(product);
+    publishOutboxEventWithOrigin("DELETE", product, "GREEN");
+    log.info("Replicated DELETE [BLUE from GREEN]: id={}", id);
+  }
+
+  private void publishOutboxEventWithOrigin(String eventType, Product product, String origin) {
+    try {
+      String payload = objectMapper.writeValueAsString(product);
+      OutboxEvent event = OutboxEvent.builder()
+          .aggregateId(String.valueOf(product.getId()))
+          .eventType(eventType)
+          .payload(payload)
+          .origin(origin)
+          .processed(false)
+          .build();
+      outboxRepository.save(event);
+    } catch (JsonProcessingException e) {
+      log.error("Failed to serialize for outbox", e);
+      throw new RuntimeException("Outbox serialization failed", e);
+    }
+  }
 }

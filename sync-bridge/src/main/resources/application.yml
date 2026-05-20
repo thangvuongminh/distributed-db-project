@@ -12,6 +12,8 @@ spring:
     password: admin
 
 bridge:
+  blue-service-url: http://localhost:8081
+  green-service-url: http://localhost:8082
   datasource:
     blue:
       jdbc-url: jdbc:mysql://localhost:3307/catalog_v1?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC

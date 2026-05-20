@@ -136,4 +136,77 @@ public class ProductService {
       throw new RuntimeException("Outbox serialization failed", e);
     }
   }
+  @Transactional
+  public Product createFromReplication(ProductDto dto) {
+    Category category = resolveCategory(dto.getCategoryName());
+    Brand brand = resolveBrand(dto.getBrandName());
+
+    Product product = Product.builder()
+        .id(dto.getId())  // Nhận UUID từ Sync Bridge (đã có trong mapping)
+        .title(dto.getTitle())
+        .priceAmount(dto.getPriceAmount())
+        .currency(dto.getCurrency() != null ? dto.getCurrency() : "USD")
+        .discountPercentage(dto.getDiscountPercentage())
+        .rating(dto.getRating())
+        .stockQuantity(dto.getStockQuantity())
+        .category(category)
+        .brand(brand)
+        .sku(dto.getSku())
+        .availabilityStatus(parseStatus(dto.getAvailabilityStatus()))
+        .dimensions(dto.getDimensions())
+        .metadata(dto.getMetadata())
+        .build();
+
+    Product saved = productRepository.save(product);
+    publishOutboxEventWithOrigin("CREATE", saved, "BLUE");
+    log.info("Replicated CREATE [GREEN from BLUE]: id={}", saved.getId());
+    return saved;
+  }
+
+  @Transactional
+  public Product updateFromReplication(String id, ProductDto dto) {
+    Product product = getById(id);
+    if (dto.getTitle() != null) product.setTitle(dto.getTitle());
+    if (dto.getPriceAmount() != null) product.setPriceAmount(dto.getPriceAmount());
+    if (dto.getCurrency() != null) product.setCurrency(dto.getCurrency());
+    if (dto.getDiscountPercentage() != null) product.setDiscountPercentage(dto.getDiscountPercentage());
+    if (dto.getRating() != null) product.setRating(dto.getRating());
+    if (dto.getStockQuantity() != null) product.setStockQuantity(dto.getStockQuantity());
+    if (dto.getCategoryName() != null) product.setCategory(resolveCategory(dto.getCategoryName()));
+    if (dto.getBrandName() != null) product.setBrand(resolveBrand(dto.getBrandName()));
+    if (dto.getSku() != null) product.setSku(dto.getSku());
+    if (dto.getAvailabilityStatus() != null) product.setAvailabilityStatus(parseStatus(dto.getAvailabilityStatus()));
+    if (dto.getDimensions() != null) product.setDimensions(dto.getDimensions());
+    if (dto.getMetadata() != null) product.setMetadata(dto.getMetadata());
+
+    Product updated = productRepository.save(product);
+    publishOutboxEventWithOrigin("UPDATE", updated, "BLUE");
+    log.info("Replicated UPDATE [GREEN from BLUE]: id={}", updated.getId());
+    return updated;
+  }
+
+  @Transactional
+  public void deleteFromReplication(String id) {
+    Product product = getById(id);
+    productRepository.delete(product);
+    publishOutboxEventWithOrigin("DELETE", product, "BLUE");
+    log.info("Replicated DELETE [GREEN from BLUE]: id={}", id);
+  }
+
+  private void publishOutboxEventWithOrigin(String eventType, Product product, String origin) {
+    try {
+      String payload = objectMapper.writeValueAsString(product);
+      OutboxEvent event = OutboxEvent.builder()
+          .aggregateId(product.getId())
+          .eventType(eventType)
+          .payload(payload)
+          .origin(origin)
+          .processed(false)
+          .build();
+      outboxRepository.save(event);
+    } catch (JsonProcessingException e) {
+      log.error("Failed to serialize for outbox", e);
+      throw new RuntimeException("Outbox serialization failed", e);
+    }
+  }
 }

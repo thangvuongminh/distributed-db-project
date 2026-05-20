@@ -2,6 +2,7 @@ package com.hirono.bridge.poller;
 
 import com.hirono.bridge.entity.blue.BlueOutboxEvent;
 import com.hirono.bridge.entity.green.GreenOutboxEvent;
+import com.hirono.bridge.replicator.Replicator;
 import com.hirono.bridge.repository.blue.BlueOutboxRepository;
 import com.hirono.bridge.repository.green.GreenOutboxRepository;
 import com.hirono.bridge.translator.SchemaTranslator;
@@ -13,10 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Định kỳ poll outbox_events từ cả Blue và Green DB.
- * Khi tìm thấy event chưa xử lý -> dịch schema -> log ra (chưa replicate, Phần 2 sẽ làm).
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -25,6 +22,7 @@ public class OutboxPoller {
   private final BlueOutboxRepository blueRepo;
   private final GreenOutboxRepository greenRepo;
   private final SchemaTranslator translator;
+  private final Replicator replicator;
 
   @Scheduled(fixedDelayString = "${bridge.poll-interval-ms:2000}")
   public void pollBlue() {
@@ -58,10 +56,9 @@ public class OutboxPoller {
 
   @Transactional(transactionManager = "blueTransactionManager")
   public void processBlueEvent(BlueOutboxEvent event) throws Exception {
-    // Loop prevention: chỉ xử lý event origin=BLUE (event do app gốc tạo ra)
+    // LOOP PREVENTION
     if (!"BLUE".equals(event.getOrigin())) {
-      log.debug("Skipping Blue event id={} (origin={} -> from replication, not user)",
-          event.getId(), event.getOrigin());
+      log.debug("Skip Blue event id={} (origin={}, not from user)", event.getId(), event.getOrigin());
       event.setProcessed(true);
       blueRepo.save(event);
       return;
@@ -70,22 +67,28 @@ public class OutboxPoller {
     log.info("Processing Blue event: id={}, type={}, aggregateId={}",
         event.getId(), event.getEventType(), event.getAggregateId());
 
-    // Dịch payload V1 -> V2
+    // 1. Translate V1 -> V2
     String v2Payload = translator.translateV1toV2(event.getPayload());
-    log.info("Translated V1->V2 payload: {}", v2Payload);
+    log.info("Translated V1->V2: {}", v2Payload);
 
-    // TODO: Phần 2 - gọi Replicator để ghi vào Green DB
-    // Hiện tại chỉ mark là processed
-    event.setProcessed(true);
-    blueRepo.save(event);
-    log.info("Marked Blue event id={} as processed", event.getId());
+    // 2. Replicate sang Green
+    boolean success = replicator.replicateToGreen(event.getEventType(), v2Payload);
+
+    // 3. Đánh dấu processed
+    if (success) {
+      event.setProcessed(true);
+      blueRepo.save(event);
+      log.info("✓ Blue event id={} replicated to Green", event.getId());
+    } else {
+      log.warn("✗ Blue event id={} NOT replicated, will retry next poll", event.getId());
+      // KHÔNG mark processed -> sẽ poll lại lần sau
+    }
   }
 
   @Transactional(transactionManager = "greenTransactionManager")
   public void processGreenEvent(GreenOutboxEvent event) throws Exception {
     if (!"GREEN".equals(event.getOrigin())) {
-      log.debug("Skipping Green event id={} (origin={} -> from replication, not user)",
-          event.getId(), event.getOrigin());
+      log.debug("Skip Green event id={} (origin={}, not from user)", event.getId(), event.getOrigin());
       event.setProcessed(true);
       greenRepo.save(event);
       return;
@@ -94,13 +97,17 @@ public class OutboxPoller {
     log.info("Processing Green event: id={}, type={}, aggregateId={}",
         event.getId(), event.getEventType(), event.getAggregateId());
 
-    // Dịch payload V2 -> V1
     String v1Payload = translator.translateV2toV1(event.getPayload());
-    log.info("Translated V2->V1 payload: {}", v1Payload);
+    log.info("Translated V2->V1: {}", v1Payload);
 
-    // TODO: Phần 2 - gọi Replicator
-    event.setProcessed(true);
-    greenRepo.save(event);
-    log.info("Marked Green event id={} as processed", event.getId());
+    boolean success = replicator.replicateToBlue(event.getEventType(), v1Payload);
+
+    if (success) {
+      event.setProcessed(true);
+      greenRepo.save(event);
+      log.info("✓ Green event id={} replicated to Blue", event.getId());
+    } else {
+      log.warn("✗ Green event id={} NOT replicated, will retry next poll", event.getId());
+    }
   }
 }

@@ -46,4 +46,19 @@ public class ProductController {
   public ResponseEntity<String> info() {
     return ResponseEntity.ok("Green Service (V2 schema) running");
   }
+  @PostMapping("/_replicate")
+  public ResponseEntity<Product> replicate(@RequestBody ProductDto dto) {
+    return ResponseEntity.ok(productService.createFromReplication(dto));
+  }
+
+  @PutMapping("/_replicate/{id}")
+  public ResponseEntity<Product> replicateUpdate(@PathVariable String id, @RequestBody ProductDto dto) {
+    return ResponseEntity.ok(productService.updateFromReplication(id, dto));
+  }
+
+  @DeleteMapping("/_replicate/{id}")
+  public ResponseEntity<Void> replicateDelete(@PathVariable String id) {
+    productService.deleteFromReplication(id);
+    return ResponseEntity.noContent().build();
+  }
 }
