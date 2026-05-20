@@ -12,15 +12,19 @@ spring:
     password: admin
 
 bridge:
-  blue:
-    url: jdbc:mysql://localhost:3307/catalog_v1?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: root
-    password: root
-  green:
-    url: jdbc:mysql://localhost:3308/catalog_v2?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: root
-    password: root
-  poll-interval-ms: 1000
+  datasource:
+    blue:
+      jdbc-url: jdbc:mysql://localhost:3307/catalog_v1?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      username: root
+      password: root
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    green:
+      jdbc-url: jdbc:mysql://localhost:3308/catalog_v2?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      username: root
+      password: root
+      driver-class-name: com.mysql.cj.jdbc.Driver
+  poll-interval-ms: 2000
+  batch-size: 50
 
 management:
   endpoints:
@@ -31,3 +35,4 @@ management:
 logging:
   level:
     com.hirono.bridge: DEBUG
+    org.hibernate.SQL: WARN
