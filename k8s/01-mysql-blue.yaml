@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-blue
+  namespace: distdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-blue
+  template:
+    metadata:
+      labels:
+        app: mysql-blue
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root
+            - name: MYSQL_DATABASE
+              value: catalog_v1
+            - name: MYSQL_USER
+              value: app
+            - name: MYSQL_PASSWORD
+              value: app123
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-blue
+  namespace: distdb
+spec:
+  selector:
+    app: mysql-blue
+  ports:
+    - port: 3306
+      targetPort: 3306

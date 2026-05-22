@@ -274,8 +274,14 @@ Detailed analysis is provided in `docs/Analysis_Report.pdf`.
     - [x] ID Mapping Service (BIGINT ↔ UUID)
     - [x] Replicator (REST API calls)
     - [x] Loop Prevention (origin-based filtering)
-- [ ] **Milestone 3**: Kubernetes deployment + Failure scenarios + Demo
-
+- [x] **Milestone 3 (in progress)**:
+    - [x] Kubernetes deployment (minikube)
+        - [x] Dockerize 3 services
+        - [x] K8s manifests (Namespace, Deployment, Service)
+        - [x] Deploy all 6 pods successfully
+    - [ ] Failure scenarios test
+    - [ ] Demo video
+    - [ ] Analysis Report
 ---
 
 ## 📝 Deliverables
@@ -289,7 +295,40 @@ Detailed analysis is provided in `docs/Analysis_Report.pdf`.
 | 5 | Screen recording (3-5 min, failure scenarios) | ⏳ Pending |
 
 ---
+## ☸️ Kubernetes Deployment
 
+### Prerequisites
+- minikube installed
+- kubectl installed
+- Docker Desktop running
+
+### Deploy
+
+```bash
+# Start minikube
+minikube start --driver=docker --memory=4096 --cpus=2
+
+# Use minikube's Docker daemon
+minikube docker-env | Invoke-Expression
+
+# Build images
+docker build -t blue-service:1.0 ./blue-service
+docker build -t green-service:1.0 ./green-service
+docker build -t sync-bridge:1.0 ./sync-bridge
+
+# Deploy all resources
+kubectl apply -f k8s/
+
+# Check pods
+kubectl get pods -n distdb
+
+# Get service URLs
+minikube service blue-service -n distdb --url
+minikube service green-service -n distdb --url
+minikube service sync-bridge -n distdb --url
+```
+
+### Architecture in K8s
 ## 👤 Author
 
 **Vương Minh Thắng**  

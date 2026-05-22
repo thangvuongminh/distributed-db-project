@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: green-service
+  namespace: distdb
+  labels:
+    version: green
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: green-service
+  template:
+    metadata:
+      labels:
+        app: green-service
+        version: green
+    spec:
+      containers:
+        - name: green-service
+          image: green-service:1.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql-green.distdb:3306/catalog_v2?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            - name: SPRING_DATASOURCE_USERNAME
+              value: root
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: root
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: green-service
+  namespace: distdb
+spec:
+  selector:
+    app: green-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+      nodePort: 30082
+  type: NodePort

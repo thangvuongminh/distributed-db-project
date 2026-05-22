@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sync-bridge
+  namespace: distdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sync-bridge
+  template:
+    metadata:
+      labels:
+        app: sync-bridge
+    spec:
+      containers:
+        - name: sync-bridge
+          image: sync-bridge:1.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8083
+          env:
+            - name: BRIDGE_DATASOURCE_BLUE_JDBC_URL
+              value: jdbc:mysql://mysql-blue.distdb:3306/catalog_v1?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            - name: BRIDGE_DATASOURCE_GREEN_JDBC_URL
+              value: jdbc:mysql://mysql-green.distdb:3306/catalog_v2?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            - name: BRIDGE_BLUE_SERVICE_URL
+              value: http://blue-service.distdb:8081
+            - name: BRIDGE_GREEN_SERVICE_URL
+              value: http://green-service.distdb:8082
+            - name: SPRING_RABBITMQ_HOST
+              value: rabbitmq.distdb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sync-bridge
+  namespace: distdb
+spec:
+  selector:
+    app: sync-bridge
+  ports:
+    - port: 8083
+      targetPort: 8083
+      nodePort: 30083
+  type: NodePort
