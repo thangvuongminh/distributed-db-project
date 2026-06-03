@@ -156,6 +156,10 @@ dist-db-project/
 ├── pom.xml                      # Parent POM (multi-module)
 ├── README.md
 │
+├── Distributed Database Project Proposal Template.pdf   # Project proposal
+├── DesignDocument.pdf           # Design document (2 pages)
+├── AnalysisReport.pdf           # Analysis report (Özsu & Valduriez theory)
+│
 ├── db/changelog/                # Liquibase migrations
 │   ├── v1-changelog.xml         # Schema V1 (Blue)
 │   └── v2-changelog.xml         # Schema V2 (Green)
@@ -348,20 +352,20 @@ Video demonstrates:
 - [x] **Milestone 1**: Docker Compose + Liquibase + Blue/Green CRUD
 - [x] **Milestone 2**: Sync Bridge (Outbox + Translator + Replicator)
 - [x] **Milestone 3**:
-  - [x] Kubernetes deployment (minikube, 6 pods)
-  - [x] 5 failure scenarios tested
-  - [x] Demo video recorded → [`demo/failure-scenarios-demo.mp4`](demo/failure-scenarios-demo.mp4)
-  - [x] [Design Document (2 pages)](DesignDocument.docx)
-  - [x] [Analysis Report (12 pages)](AnalysisReport.docx)
+    - [x] Kubernetes deployment (minikube, 6 pods)
+    - [x] 5 failure scenarios tested
+    - [x] Demo video recorded → [`demo/failure-scenarios-demo.mp4`](demo/failure-scenarios-demo.mp4)
+    - [x] [Design Document (2 pages)](DesignDocument.pdf)
+    - [x] [Analysis Report (12 pages)](AnalysisReport.pdf)
 
 ## 📦 Deliverables
 
 | #   | Item                           | File                                                                 |
 | --- | ------------------------------ | -------------------------------------------------------------------- |
-| 1   | Project Proposal               | (submitted earlier)                                                  |
-| 2   | Design Document                | [`DesignDocument.docx`](DesignDocument.docx)                         |
+| 1   | Project Proposal               | [Project Proposal](Distributed%20Database%20Project%20Proposal%20Template.pdf)                         |
+| 2   | Design Document                | [`DesignDocument.pdf`](DesignDocument.pdf)                           |
 | 3   | GitHub Repository + README     | This repo                                                            |
-| 4   | Analysis Report                | [`AnalysisReport.docx`](AnalysisReport.docx)                         |
+| 4   | Analysis Report                | [`AnalysisReport.pdf`](AnalysisReport.pdf)                           |
 | 5   | Demo Video (failure scenarios) | [`demo/failure-scenarios-demo.mp4`](demo/failure-scenarios-demo.mp4) |
 
 ---
